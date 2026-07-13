@@ -1,488 +1,235 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-
 <title>3D Vector Network Analyzer</title>
 
 <style>
-
-html,body{
-margin:0;
-overflow:hidden;
-background:#1b1d22;
-height:100%;
-}
-
-canvas{
-display:block;
-}
-
-#hint{
-position:absolute;
-bottom:15px;
-left:50%;
-transform:translateX(-50%);
-color:#7de6ff;
-font-family:Arial;
-font-size:13px;
-letter-spacing:2px;
-opacity:.75;
-pointer-events:none;
-}
-
+  html, body { margin: 0; overflow: hidden; background: #1b1d22; height: 100%; }
+  canvas { display: block; }
+  #hint {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #7de6ff;
+    font-family: Arial;
+    font-size: 13px;
+    letter-spacing: 2px;
+    opacity: .75;
+    pointer-events: none;
+  }
 </style>
 
 <script type="importmap">
 {
-"imports":{
-"three":"https://unpkg.com/three@0.160.0/build/three.module.js",
-"three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
-}
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
 }
 </script>
-
 </head>
 
 <body>
-
-<div id="hint">
-Drag to Rotate · Scroll to Zoom
-</div>
+<div id="hint">Drag to Rotate · Scroll to Zoom</div>
 
 <script type="module">
-
 import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-import {OrbitControls}
-from "three/addons/controls/OrbitControls.js";
+// =====================================================================
+// SCENE / CAMERA / RENDERER
+// =====================================================================
 
-const scene=new THREE.Scene();
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x20242c);
+scene.fog = new THREE.FogExp2(0x20242c, 0.03);
 
-scene.background=new THREE.Color(0x20242c);
-
-scene.fog=new THREE.FogExp2(
-0x20242c,
-0.03
+const camera = new THREE.PerspectiveCamera(
+  40, window.innerWidth / window.innerHeight, 0.1, 100
 );
+camera.position.set(4.5, 2, 5);
 
-const camera=new THREE.PerspectiveCamera(
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.8;
+document.body.appendChild(renderer.domElement);
 
-40,
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.target.set(0, 0, 0);
 
-window.innerWidth/window.innerHeight,
+// =====================================================================
+// LIGHTING
+// =====================================================================
 
-0.1,
+scene.add(new THREE.AmbientLight(0xffffff, 2.2));
 
-100
-
-);
-
-camera.position.set(
-4.5,
-2,
-5
-);
-
-const renderer=new THREE.WebGLRenderer({
-
-antialias:true
-
-});
-
-renderer.setSize(
-
-window.innerWidth,
-
-window.innerHeight
-
-);
-
-renderer.setPixelRatio(
-
-window.devicePixelRatio
-
-);
-
-renderer.shadowMap.enabled=true;
-
-renderer.shadowMap.type=
-
-THREE.PCFSoftShadowMap;
-
-renderer.outputColorSpace=
-
-THREE.SRGBColorSpace;
-
-renderer.toneMapping=
-
-THREE.ACESFilmicToneMapping;
-
-renderer.toneMappingExposure=1.8;
-
-document.body.appendChild(
-
-renderer.domElement
-
-);
-
-const controls=
-
-new OrbitControls(
-
-camera,
-
-renderer.domElement
-
-);
-
-controls.enableDamping=true;
-
-controls.target.set(
-0,
-0,
-0
-);
-
-// Lighting
-
-scene.add(
-
-new THREE.AmbientLight(
-
-0xffffff,
-
-2.2
-
-)
-
-);
-
-const key=
-
-new THREE.DirectionalLight(
-
-0xffffff,
-
-4
-
-);
-
-key.position.set(
-4,
-7,
-5
-);
-
-key.castShadow=true;
-
+const key = new THREE.DirectionalLight(0xffffff, 4);
+key.position.set(4, 7, 5);
+key.castShadow = true;
 scene.add(key);
 
-const rim=
-
-new THREE.DirectionalLight(
-
-0x99dfff,
-
-2
-
-);
-
-rim.position.set(
--4,
-3,
--3
-);
-
+const rim = new THREE.DirectionalLight(0x99dfff, 2);
+rim.position.set(-4, 3, -3);
 scene.add(rim);
 
-const front=
-
-new THREE.DirectionalLight(
-
-0xffffff,
-
-2.5
-
-);
-
-front.position.set(
-0,
-1,
-6
-);
-
+const front = new THREE.DirectionalLight(0xffffff, 2.5);
+front.position.set(0, 1, 6);
 scene.add(front);
-const frontGlow = new THREE.DirectionalLight(0xffffff,4);
-frontGlow.position.set(0,2,6);
+
+const frontGlow = new THREE.DirectionalLight(0xffffff, 4);
+frontGlow.position.set(0, 2, 6);
 scene.add(frontGlow);
 
-// Floor
+// =====================================================================
+// FLOOR
+// =====================================================================
 
-const floor=new THREE.Mesh(
-
-new THREE.PlaneGeometry(
-
-30,
-
-30
-
-),
-
-new THREE.MeshStandardMaterial({
-
-color:0x16181c,
-
-roughness:0.95
-
-})
-
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(30, 30),
+  new THREE.MeshStandardMaterial({ color: 0x16181c, roughness: 0.95 })
 );
-
-floor.rotation.x=-Math.PI/2;
-
-floor.position.y=-1;
-
-floor.receiveShadow=true;
-
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -1;
+floor.receiveShadow = true;
 scene.add(floor);
 
-const grid=new THREE.GridHelper(
-
-30,
-
-60,
-
-0x1d7fa5,
-
-0x222222
-
-);
-
-grid.position.y=-0.99;
-
-grid.material.opacity=.25;
-
-grid.material.transparent=true;
-
+const grid = new THREE.GridHelper(30, 60, 0x1d7fa5, 0x222222);
+grid.position.y = -0.99;
+grid.material.opacity = 0.25;
+grid.material.transparent = true;
 scene.add(grid);
 
-// =======================
+// =====================================================================
 // VNA GROUP
-// =======================
+// =====================================================================
 
-const vna=new THREE.Group();
-
-scene.add(vna);
+const vna = new THREE.Group();
 vna.position.y = 0.25;
+scene.add(vna);
 
-// Body
+// ---- Body -------------------------------------------------------------
 
-const bodyMat=
-
-new THREE.MeshStandardMaterial({
-
-  color:0x303236,
-    metalness:0.9,
-    roughness:0.12,
-    clearcoat:1.0,
-    clearcoatRoughness:0.05
-
+const bodyMat = new THREE.MeshStandardMaterial({
+  color: 0x303236,
+  metalness: 0.9,
+  roughness: 0.12,
+  clearcoat: 1.0,
+  clearcoatRoughness: 0.05
 });
 
-const body=
-
-new THREE.Mesh(
-
-new THREE.BoxGeometry(
-
-5,
-
-2.1,
-
-2.4
-
-),
-
-bodyMat
-
-);
-
-body.castShadow=true;
-
-body.receiveShadow=true;
-
+const body = new THREE.Mesh(new THREE.BoxGeometry(5, 2.1, 2.4), bodyMat);
+body.castShadow = true;
+body.receiveShadow = true;
 vna.add(body);
 
-// =======================
-// SURFACE Z-REFERENCE CONSTANTS
-// Everything mounted "on" the front panel is now derived
-// from the panel's own outer face so nothing floats in space.
-// =======================
+// ---- Surface z-reference constants ------------------------------------
+// Everything mounted "on" the front panel is derived from the panel's
+// own outer face so nothing floats in empty space.
 
 const FRONT_PANEL_DEPTH = 0.08;
 const FRONT_PANEL_Z = 1.17;
-const PANEL_FACE_Z = FRONT_PANEL_Z + FRONT_PANEL_DEPTH/2; // outer (visible) face of the front panel = 1.21
+const PANEL_FACE_Z = FRONT_PANEL_Z + FRONT_PANEL_DEPTH / 2; // 1.21, outer visible face
 
-// Front panel
-
-const frontPanel=
-
-new THREE.Mesh(
-
-new THREE.BoxGeometry(
-
-4.95,
-
-2,
-
-FRONT_PANEL_DEPTH
-
-),
-
-new THREE.MeshStandardMaterial({
-
-color:0x111111,
-
-metalness:.3,
-
-roughness:.2
-
-})
-
+const frontPanel = new THREE.Mesh(
+  new THREE.BoxGeometry(4.95, 2, FRONT_PANEL_DEPTH),
+  new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.3, roughness: 0.2 })
 );
-
-frontPanel.position.z=FRONT_PANEL_Z;
-
+frontPanel.position.z = FRONT_PANEL_Z;
 vna.add(frontPanel);
 
-// Feet
+// ---- Feet ---------------------------------------------------------------
 
-const footMat=
-
-new THREE.MeshStandardMaterial({
-
-color:0x555555,
-
-metalness:.8,
-
-roughness:.5
-
-});
-
-function foot(x,z){
-
-    const base = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.22,0.26,0.22,40),
-        new THREE.MeshStandardMaterial({
-            color:0x8a8a8a,
-            metalness:0.9,
-            roughness:0.35
-        })
-    );
-
-    base.position.set(x,-1.18,z);
-
-    vna.add(base);
-
+function foot(x, z) {
+  const base = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.22, 0.26, 0.22, 40),
+    new THREE.MeshStandardMaterial({ color: 0x8a8a8a, metalness: 0.9, roughness: 0.35 })
+  );
+  base.position.set(x, -1.18, z);
+  vna.add(base);
 }
+foot(-2.15, 0.95);
+foot(2.15, 0.95);
+foot(-2.15, -0.95);
+foot(2.15, -0.95);
 
-foot(-2.15,0.95);
-foot( 2.15,0.95);
-foot(-2.15,-0.95);
-foot( 2.15,-0.95);
-
-// =======================
+// =====================================================================
 // DISPLAY SCREEN
-// =======================
+// =====================================================================
 
 const SCREEN_FRAME_DEPTH = 0.05;
 const screenFrame = new THREE.Mesh(
-
-    new THREE.BoxGeometry(
-        2.75,
-        1.35,
-        SCREEN_FRAME_DEPTH
-    ),
-
-    new THREE.MeshStandardMaterial({
-
-        color:0x090909,
-        metalness:0.25,
-        roughness:0.08
-
-    })
-
+  new THREE.BoxGeometry(2.75, 1.35, SCREEN_FRAME_DEPTH),
+  new THREE.MeshStandardMaterial({ color: 0x090909, metalness: 0.25, roughness: 0.08 })
 );
-
 // frame sits flush against the front panel's outer face
-screenFrame.position.set(
-    -0.72,
-    0.25,
-    PANEL_FACE_Z + SCREEN_FRAME_DEPTH/2
-);
-
+screenFrame.position.set(-0.72, 0.25, PANEL_FACE_Z + SCREEN_FRAME_DEPTH / 2);
 vna.add(screenFrame);
 
 const SCREEN_FRAME_FACE_Z = PANEL_FACE_Z + SCREEN_FRAME_DEPTH;
 
-// Screen
+// ---- Screen content texture --------------------------------------------
+// Draws a grid + channel labels onto a canvas so the screen reads as an
+// active instrument rather than a flat green rectangle.
 
-// -----------------------------------------------------------
-// Draw fake VNA trace content onto a canvas so the screen reads
-// as an active instrument rather than a flat green rectangle.
-// -----------------------------------------------------------
-function createScreenTexture(){
+function createScreenTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 460;
+  const ctx = canvas.getContext('2d');
 
-    const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 460;
-    const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#0a1f14';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = '#0a1f14';
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+  // quadrant dividers
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(canvas.width / 2, 0);
+  ctx.lineTo(canvas.width / 2, canvas.height);
+  ctx.moveTo(0, canvas.height / 2);
+  ctx.lineTo(canvas.width, canvas.height / 2);
+  ctx.stroke();
 
-    // quadrant dividers
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-    ctx.lineWidth = 2;
+  // fine grid
+  ctx.strokeStyle = 'rgba(70,160,100,0.35)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < canvas.width; x += canvas.width / 20) {
     ctx.beginPath();
-    ctx.moveTo(canvas.width/2,0); ctx.lineTo(canvas.width/2,canvas.height);
-    ctx.moveTo(0,canvas.height/2); ctx.lineTo(canvas.width,canvas.height/2);
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
     ctx.stroke();
+  }
+  for (let y = 0; y < canvas.height; y += canvas.height / 12) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
 
-    // fine grid
-    ctx.strokeStyle = 'rgba(70,160,100,0.35)';
-    ctx.lineWidth = 1;
-    for(let x=0;x<canvas.width;x+=canvas.width/20){
-        ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke();
-    }
-    for(let y=0;y<canvas.height;y+=canvas.height/12){
-        ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke();
-    }
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = '20px monospace';
+  ctx.fillText('CH1  S11  LOG MAG', 14, 24);
+  ctx.fillText('CH2  SMITH', canvas.width / 2 + 14, 24);
 
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.font = '20px monospace';
-    ctx.fillText('CH1  S11  LOG MAG', 14, 24);
-    ctx.fillText('CH2  SMITH', canvas.width/2+14, 24);
-
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    return tex;
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 const screenTexture = createScreenTexture();
 
 const screen = new THREE.Mesh(
-
-    new THREE.PlaneGeometry(
-        2.55,
-        1.15
-    ),
-
-    new THREE.MeshStandardMaterial({
-
+  new THREE.PlaneGeometry(2.55, 1.15),
+  new THREE.MeshStandardMaterial({
     map: screenTexture,
     emissive: 0xffffff,
     emissiveMap: screenTexture,
@@ -490,546 +237,298 @@ const screen = new THREE.Mesh(
     color: 0x111111,
     roughness: 0.35,
     metalness: 0
-
-    })
-
+  })
 );
-
 // glass sits just proud of the frame's front face
-screen.position.set(
-    -0.72,
-    0.25,
-    SCREEN_FRAME_FACE_Z + 0.002
-);
-
+screen.position.set(-0.72, 0.25, SCREEN_FRAME_FACE_Z + 0.002);
 vna.add(screen);
 
-// -----------------------------------------------------------
-// Glossy glass overlay — clearcoat layer catches the studio
-// lights so the panel reads as glazed glass, not flat plastic.
-// -----------------------------------------------------------
+// ---- Glossy glass overlay -----------------------------------------------
+// Clearcoat layer catches the studio lights so the panel reads as
+// glazed glass rather than flat plastic.
+
 const screenGlass = new THREE.Mesh(
-
-    new THREE.PlaneGeometry(2.55,1.15),
-
-    new THREE.MeshPhysicalMaterial({
-        color:0xffffff,
-        transparent:true,
-        opacity:0.07,
-        roughness:0.03,
-        metalness:0,
-        clearcoat:1,
-        clearcoatRoughness:0.03,
-        reflectivity:1
-    })
-
+  new THREE.PlaneGeometry(2.55, 1.15),
+  new THREE.MeshPhysicalMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.07,
+    roughness: 0.03,
+    metalness: 0,
+    clearcoat: 1,
+    clearcoatRoughness: 0.03,
+    reflectivity: 1
+  })
 );
-
 screenGlass.position.set(-0.72, 0.25, SCREEN_FRAME_FACE_Z + 0.006);
-
 vna.add(screenGlass);
 
 // diagonal glare streak, sold with additive blending
-function createGlareTexture(){
-    const c = document.createElement('canvas');
-    c.width = 512; c.height = 512;
-    const ctx = c.getContext('2d');
-    const grad = ctx.createLinearGradient(0,0,c.width,c.height);
-    grad.addColorStop(0.00,'rgba(255,255,255,0)');
-    grad.addColorStop(0.42,'rgba(255,255,255,0)');
-    grad.addColorStop(0.50,'rgba(255,255,255,0.4)');
-    grad.addColorStop(0.58,'rgba(255,255,255,0)');
-    grad.addColorStop(1.00,'rgba(255,255,255,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0,0,c.width,c.height);
-    return new THREE.CanvasTexture(c);
+function createGlareTexture() {
+  const c = document.createElement('canvas');
+  c.width = 512;
+  c.height = 512;
+  const ctx = c.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, c.width, c.height);
+  grad.addColorStop(0.00, 'rgba(255,255,255,0)');
+  grad.addColorStop(0.42, 'rgba(255,255,255,0)');
+  grad.addColorStop(0.50, 'rgba(255,255,255,0.4)');
+  grad.addColorStop(0.58, 'rgba(255,255,255,0)');
+  grad.addColorStop(1.00, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, c.width, c.height);
+  return new THREE.CanvasTexture(c);
 }
 
 const glare = new THREE.Mesh(
-
-    new THREE.PlaneGeometry(2.55,1.15),
-
-    new THREE.MeshBasicMaterial({
-        map: createGlareTexture(),
-        transparent:true,
-        opacity:0.55,
-        blending: THREE.AdditiveBlending,
-        depthWrite:false
-    })
-
+  new THREE.PlaneGeometry(2.55, 1.15),
+  new THREE.MeshBasicMaterial({
+    map: createGlareTexture(),
+    transparent: true,
+    opacity: 0.55,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  })
 );
-
 glare.position.set(-0.72, 0.25, SCREEN_FRAME_FACE_Z + 0.008);
-
 vna.add(glare);
 
-
-// =======================
+// =====================================================================
 // LOWER SILVER PANEL
-// =======================
+// =====================================================================
 
 const SILVER_PANEL_DEPTH = 0.04;
 const silverPanel = new THREE.Mesh(
-
-new THREE.BoxGeometry(
-
-4.95,
-0.42,
-SILVER_PANEL_DEPTH
-
-),
-
-new THREE.MeshStandardMaterial({
-
-color:0xd7d9dc,
-
-metalness:0.95,
-
-roughness:0.18
-
-})
-
+  new THREE.BoxGeometry(4.95, 0.42, SILVER_PANEL_DEPTH),
+  new THREE.MeshStandardMaterial({ color: 0xd7d9dc, metalness: 0.95, roughness: 0.18 })
 );
-
-silverPanel.position.set(
-
-0,
--0.79,
-PANEL_FACE_Z + SILVER_PANEL_DEPTH/2
-
-);
-
+silverPanel.position.set(0, -0.79, PANEL_FACE_Z + SILVER_PANEL_DEPTH / 2);
 vna.add(silverPanel);
 
 const SILVER_PANEL_FACE_Z = PANEL_FACE_Z + SILVER_PANEL_DEPTH;
 
-
-// =======================
+// =====================================================================
 // BLUE SIDE HANDLES
-// =======================
+// =====================================================================
 
-const blueMat = new THREE.MeshStandardMaterial({
+const blueMat = new THREE.MeshStandardMaterial({ color: 0x2e5ea8, metalness: 0.65, roughness: 0.32 });
 
-color:0x2e5ea8,
+function makeHandle(side) {
+  const handle = new THREE.Group();
 
-metalness:0.65,
+  const outer = new THREE.Mesh(new THREE.BoxGeometry(0.32, 2.25, 0.28), blueMat);
+  outer.position.x = side * 2.72;
+  handle.add(outer);
 
-roughness:0.32
+  const top = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.25, 0.85), blueMat);
+  top.position.set(side * 2.56, 1.0, 0);
+  handle.add(top);
 
-});
+  const bottom = top.clone();
+  bottom.position.y = -1.0;
+  handle.add(bottom);
 
+  const grip = new THREE.Mesh(
+    new THREE.BoxGeometry(0.12, 1.35, 0.18),
+    new THREE.MeshStandardMaterial({ color: 0xe8e8e8, metalness: 0.2, roughness: 0.6 })
+  );
+  grip.position.set(side * 2.63, 0, 0.05);
+  handle.add(grip);
 
-
-function makeHandle(side){
-
-    const handle = new THREE.Group();
-
-    const outer = new THREE.Mesh(
-        new THREE.BoxGeometry(0.32,2.25,0.28),
-        blueMat
-    );
-    outer.position.x = side*2.72;
-    handle.add(outer);
-
-    const top = new THREE.Mesh(
-        new THREE.BoxGeometry(0.55,0.25,0.85),
-        blueMat
-    );
-    top.position.set(side*2.56,1.0,0);
-    handle.add(top);
-
-    const bottom = top.clone();
-    bottom.position.y = -1.0;
-    handle.add(bottom);
-
-    const grip = new THREE.Mesh(
-        new THREE.BoxGeometry(0.12,1.35,0.18),
-        new THREE.MeshStandardMaterial({
-            color:0xe8e8e8,
-            metalness:0.2,
-            roughness:0.6
-        })
-    );
-
-    grip.position.set(side*2.63,0,0.05);
-    handle.add(grip);
-
-    vna.add(handle);
+  vna.add(handle);
 }
 makeHandle(-1);
-
 makeHandle(1);
 
-
-// =======================
+// =====================================================================
 // SIDE VENTILATION
-// =======================
+// =====================================================================
 
-const ventMat=new THREE.MeshStandardMaterial({
+const ventMat = new THREE.MeshStandardMaterial({ color: 0x1d1d1d });
 
-color:0x1d1d1d
+for (let y = -0.65; y <= 0.65; y += 0.10) {
+  for (let z = -0.80; z <= 0.80; z += 0.10) {
+    const slot = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.05, 0.06), ventMat);
+    slot.position.set(-2.47, y, z);
+    vna.add(slot);
 
-});
-
-for(let y=-0.65;y<=0.65;y+=0.10){
-
-for(let z=-0.80;z<=0.80;z+=0.10){
-
-const slot=new THREE.Mesh(
-
-new THREE.BoxGeometry(
-
-0.03,
-0.05,
-0.06
-
-),
-
-ventMat
-
-);
-
-slot.position.set(
-
--2.47,
-y,
-z
-
-);
-
-vna.add(slot);
-
-const slot2=slot.clone();
-
-slot2.position.x=2.47;
-
-vna.add(slot2);
-
+    const slot2 = slot.clone();
+    slot2.position.x = 2.47;
+    vna.add(slot2);
+  }
 }
 
-}
-
-
-// =======================
+// =====================================================================
 // TOP HIGHLIGHT
-// =======================
+// =====================================================================
 
-const highlight=new THREE.Mesh(
-
-new THREE.BoxGeometry(
-
-4.85,
-0.02,
-2.28
-
-),
-
-new THREE.MeshStandardMaterial({
-
-color:0x4a4a4a,
-
-metalness:1,
-
-roughness:0.1
-
-})
-
+const highlight = new THREE.Mesh(
+  new THREE.BoxGeometry(4.85, 0.02, 2.28),
+  new THREE.MeshStandardMaterial({ color: 0x4a4a4a, metalness: 1, roughness: 0.1 })
 );
-
-highlight.position.y=1.06;
-
+highlight.position.y = 1.06;
 vna.add(highlight);
 
-// =======================================
+// =====================================================================
 // CONTROL PANEL (RIGHT SIDE)
-// =======================================
+// =====================================================================
 
 const BUTTON_DEPTH = 0.025;
-const BUTTON_Z = PANEL_FACE_Z + BUTTON_DEPTH/2; // flush with the front panel face
+const BUTTON_Z = PANEL_FACE_Z + BUTTON_DEPTH / 2; // flush with the front panel face
 
-const buttonMat = new THREE.MeshStandardMaterial({
-    color: 0x3a3a3a,
-    metalness: 0.7,
-    roughness: 0.45
-});
-
-const blueButtonMat = new THREE.MeshStandardMaterial({
-    color: 0x3b7cff,
-    metalness: 0.6,
-    roughness: 0.3
-});
+const buttonMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, metalness: 0.7, roughness: 0.45 });
+const blueButtonMat = new THREE.MeshStandardMaterial({ color: 0x3b7cff, metalness: 0.6, roughness: 0.3 });
 
 const orangeButtonMat = new THREE.MeshStandardMaterial({
-    color: 0xffa500,
-    metalness: 0.6,
-    roughness: 0.25,
-    emissive: 0xaa5500,
-    emissiveIntensity: 0.25
+  color: 0xffa500,
+  metalness: 0.6,
+  roughness: 0.25,
+  emissive: 0xaa5500,
+  emissiveIntensity: 0.25
 });
 
 const tealButtonMat = new THREE.MeshStandardMaterial({
-    color: 0x2fd9c9,
-    metalness: 0.6,
-    roughness: 0.25,
-    emissive: 0x0e6b62,
-    emissiveIntensity: 0.3
+  color: 0x2fd9c9,
+  metalness: 0.6,
+  roughness: 0.25,
+  emissive: 0x0e6b62,
+  emissiveIntensity: 0.3
 });
 
 function addButton(x, y, colorMat = buttonMat) {
-
-    const b = new THREE.Mesh(
-
-        new THREE.BoxGeometry(
-            0.12,
-            0.08,
-            BUTTON_DEPTH
-        ),
-
-        colorMat
-
-    );
-
-    b.position.set(
-        x,
-        y,
-        BUTTON_Z
-    );
-
-    vna.add(b);
-
+  const b = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, BUTTON_DEPTH), colorMat);
+  b.position.set(x, y, BUTTON_Z);
+  vna.add(b);
 }
 
-// =======================================
-// SOFT KEYS
-// =======================================
+function addSmallButton(x, y, colorMat = buttonMat) {
+  const b = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.06, BUTTON_DEPTH), colorMat);
+  b.position.set(x, y, BUTTON_Z);
+  vna.add(b);
 
- for(let i=0;i<6;i++){
-
-    addButton(0.95,0.60-i*0.22, i%2===0 ? blueButtonMat : buttonMat);
-
-}
-for(let i=0;i<6;i++){
-
-    addButton(1.20,0.60-i*0.22, i%2===0 ? buttonMat : blueButtonMat);
+  const smallKeyColors = [blueButtonMat, buttonMat, buttonMat, tealButtonMat, buttonMat];
+  for (let i = 0; i < 15; i++) {
+    addSmallButton(1.35, 0.95 - i * 0.18, smallKeyColors[i % smallKeyColors.length]);
+  }
 }
 
-function addSmallButton(x,y,colorMat=buttonMat){
+// ---- Soft keys (beside the screen) ---------------------------------------
 
-    const b = new THREE.Mesh(
-
-        new THREE.BoxGeometry(
-            0.10,
-            0.06,
-            BUTTON_DEPTH
-        ),
-
-        colorMat
-
-    );
-
-    b.position.set(x,y,BUTTON_Z);
-
-    vna.add(b);
-    const smallKeyColors = [blueButtonMat, buttonMat, buttonMat, tealButtonMat, buttonMat];
-
-    for(let i=0;i<15;i++){
-
-    addSmallButton(
-
-        1.35, 0.95 - i*0.18,
-
-        smallKeyColors[i % smallKeyColors.length]
-
-    );
-
+for (let i = 0; i < 6; i++) {
+  addButton(0.95, 0.60 - i * 0.22, i % 2 === 0 ? blueButtonMat : buttonMat);
+}
+for (let i = 0; i < 6; i++) {
+  addButton(1.20, 0.60 - i * 0.22, i % 2 === 0 ? buttonMat : blueButtonMat);
 }
 
+// ---- Numeric keypad ---------------------------------------------------------
+
+for (let r = 0; r < 3; r++) {
+  for (let c = 0; c < 3; c++) {
+    addButton(1.75 + c * 0.22, -0.10 - r * 0.20);
+  }
 }
 
-// =======================================
-// NUMERIC KEYPAD
-// =======================================
-
-
-for(let r=0;r<3;r++){
-
-    for(let c=0;c<3;c++){
-
-        addButton(
-
-            1.75 + c*0.22,
-            -0.10 - r*0.20
-
-        );
-
-    }
-
-}
-
-
-// =======================================
-// FUNCTION BUTTONS
-// =======================================
+// ---- Function buttons ---------------------------------------------------------
 
 const functionRowColors = [
-    [buttonMat, buttonMat, buttonMat, blueButtonMat, blueButtonMat],
-    [buttonMat, buttonMat, buttonMat, tealButtonMat, orangeButtonMat]
+  [buttonMat, buttonMat, buttonMat, blueButtonMat, blueButtonMat],
+  [buttonMat, buttonMat, buttonMat, tealButtonMat, orangeButtonMat]
 ];
 
-for(let r=0;r<2;r++){
-
-    for(let c=0;c<5;c++){
-
-        addButton(
-
-            1.45 + c*0.22,
-
-            0.65 - r*0.20,
-
-            functionRowColors[r][c]
-
-        );
-
-    }
-
+for (let r = 0; r < 2; r++) {
+  for (let c = 0; c < 5; c++) {
+    addButton(1.45 + c * 0.22, 0.65 - r * 0.20, functionRowColors[r][c]);
+  }
 }
 
-// =======================================
+// =====================================================================
 // ROTARY KNOB
-// =======================================
+// =====================================================================
 
 const knobGroup = new THREE.Group();
 
 const knobBody = new THREE.Mesh(
-
-    new THREE.CylinderGeometry(
-        0.17,
-        0.17,
-        0.12,
-        48
-    ),
-
-    new THREE.MeshStandardMaterial({
-
-        color:0x202020,
-        metalness:0.9,
-        roughness:0.25
-
-    })
-
+  new THREE.CylinderGeometry(0.17, 0.17, 0.12, 48),
+  new THREE.MeshStandardMaterial({ color: 0x202020, metalness: 0.9, roughness: 0.25 })
 );
-
-knobBody.rotation.x=Math.PI/2;
-
+knobBody.rotation.x = Math.PI / 2;
 knobGroup.add(knobBody);
 
 const knobCap = new THREE.Mesh(
-
-    new THREE.CylinderGeometry(
-        0.11,
-        0.11,
-        0.03,
-        32
-    ),
-
-    new THREE.MeshStandardMaterial({
-
-        color:0x555555,
-        metalness:1,
-        roughness:0.15
-
-    })
-
+  new THREE.CylinderGeometry(0.11, 0.11, 0.03, 32),
+  new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 1, roughness: 0.15 })
 );
-
-knobCap.rotation.x=Math.PI/2;
-
-knobCap.position.z=0.075;
-
+knobCap.rotation.x = Math.PI / 2;
+knobCap.position.z = 0.075;
 knobGroup.add(knobCap);
 
 // knob body's back face sits on the panel; cap sits proud of the knob body
-knobGroup.position.set(
-
-2,0.2,PANEL_FACE_Z + 0.06
-
-);
-
+knobGroup.position.set(2, 0.2, PANEL_FACE_Z + 0.06);
 vna.add(knobGroup);
 
-// =======================================
+// =====================================================================
 // FOUR RF PORTS
-// =======================================
+// =====================================================================
+// Each port = mounting flange -> knurled nut -> insulator ring -> pin,
+// stacked outward from the silver panel's face so it reads as a real
+// coax connector rather than a flat gold knob.
 
-const portMat = new THREE.MeshStandardMaterial({
-
-    color:0xd5b24a,
-
-    metalness:1,
-
-    roughness:0.12
-
-});
+const portMat = new THREE.MeshStandardMaterial({ color: 0xd5b24a, metalness: 1, roughness: 0.12 });
 
 const RF_FLANGE_DEPTH = 0.03;
-const RF_BODY_DEPTH = 0.08;
+const RF_NUT_DEPTH = 0.06;
+const RF_INSULATOR_DEPTH = 0.02;
+const RF_PIN_DEPTH = 0.05;
 
-function addRFPort(x){
+const connectorMetalMat = new THREE.MeshStandardMaterial({ color: 0xc9cdd2, metalness: 1, roughness: 0.22 });
+const insulatorMat = new THREE.MeshStandardMaterial({ color: 0xf2ead9, metalness: 0.1, roughness: 0.6 });
+const pinMat = new THREE.MeshStandardMaterial({ color: 0xffd76a, metalness: 1, roughness: 0.15 });
 
-    const flange = new THREE.Mesh(
+function addRFPort(x) {
+  // mounting flange, flush against the silver panel
+  const flange = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.075, 0.075, RF_FLANGE_DEPTH, 32),
+    portMat
+  );
+  flange.rotation.x = Math.PI / 2;
+  flange.position.set(x, -0.79, SILVER_PANEL_FACE_Z + RF_FLANGE_DEPTH / 2);
+  vna.add(flange);
 
-        new THREE.CylinderGeometry(
-            0.075,
-            0.075,
-            RF_FLANGE_DEPTH,
-            32
-        ),
+  const flangeFaceZ = SILVER_PANEL_FACE_Z + RF_FLANGE_DEPTH;
 
-        portMat
+  // knurled outer nut — hexagonal, low-poly cylinder reads as a real
+  // threaded coax nut you'd twist a cable connector onto
+  const nut = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.058, 0.058, RF_NUT_DEPTH, 6),
+    connectorMetalMat
+  );
+  nut.rotation.x = Math.PI / 2;
+  nut.rotation.z = Math.PI / 6;
+  nut.position.set(x, -0.79, flangeFaceZ + RF_NUT_DEPTH / 2);
+  vna.add(nut);
 
-    );
+  const nutFaceZ = flangeFaceZ + RF_NUT_DEPTH;
 
-    flange.rotation.x=Math.PI/2;
+  // cream dielectric insulator ring, recessed just inside the nut
+  const insulator = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.032, 0.032, RF_INSULATOR_DEPTH, 32),
+    insulatorMat
+  );
+  insulator.rotation.x = Math.PI / 2;
+  insulator.position.set(x, -0.79, nutFaceZ + RF_INSULATOR_DEPTH / 2);
+  vna.add(insulator);
 
-    flange.position.set(
+  const insulatorFaceZ = nutFaceZ + RF_INSULATOR_DEPTH;
 
-        x,
-
-        -0.79,
-
-        SILVER_PANEL_FACE_Z + RF_FLANGE_DEPTH/2
-
-    );
-
-    vna.add(flange);
-
-    const body = new THREE.Mesh(
-
-        new THREE.CylinderGeometry(
-            0.05,
-            0.05,
-            RF_BODY_DEPTH,
-            32
-        ),
-
-        portMat
-
-    );
-
-    body.rotation.x=Math.PI/2;
-
-    body.position.set(
-
-        x,
-
-        -0.79,
-
-        SILVER_PANEL_FACE_Z + RF_FLANGE_DEPTH + RF_BODY_DEPTH/2
-
-    );
-
-    vna.add(body);
-
+  // protruding center pin — the actual contact a cable connects to
+  const pin = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.011, 0.011, RF_PIN_DEPTH, 20),
+    pinMat
+  );
+  pin.rotation.x = Math.PI / 2;
+  pin.position.set(x, -0.79, insulatorFaceZ + RF_PIN_DEPTH / 2);
+  vna.add(pin);
 }
 
 addRFPort(-1.60);
@@ -1037,135 +536,51 @@ addRFPort(-0.50);
 addRFPort(0.60);
 addRFPort(1.70);
 
-// =======================================
+// =====================================================================
 // USB CONNECTOR
-// =======================================
+// =====================================================================
 
 const USB_DEPTH = 0.03;
 const usb = new THREE.Mesh(
-
-    new THREE.BoxGeometry(
-        0.16,
-        0.08,
-        USB_DEPTH
-    ),
-
-    new THREE.MeshStandardMaterial({
-
-        color:0xd9d9d9,
-
-        metalness:1,
-
-        roughness:0.15
-
-    })
-
+  new THREE.BoxGeometry(0.16, 0.08, USB_DEPTH),
+  new THREE.MeshStandardMaterial({ color: 0xd9d9d9, metalness: 1, roughness: 0.15 })
 );
-
-usb.position.set(
-
--2.15,
-
--0.78,
-
-SILVER_PANEL_FACE_Z + USB_DEPTH/2
-
-);
-
+usb.position.set(-2.15, -0.78, SILVER_PANEL_FACE_Z + USB_DEPTH / 2);
 vna.add(usb);
 
-// =======================================
+// =====================================================================
 // STATUS LEDs
-// =======================================
+// =====================================================================
 
 const LED_RADIUS = 0.018;
 const ledMat = new THREE.MeshStandardMaterial({
-
-    color:0x00ff66,
-
-    emissive:0x00ff66,
-
-    emissiveIntensity:3
-
+  color: 0x00ff66,
+  emissive: 0x00ff66,
+  emissiveIntensity: 3
 });
 
-for(let i=0;i<6;i++){
-
-    const led = new THREE.Mesh(
-
-        new THREE.SphereGeometry(
-            LED_RADIUS,
-            12,
-            12
-        ),
-
-        ledMat
-
-    );
-
-    led.position.set(
-
-        -1.60+i*0.14,
-
-        0.93,
-
-        PANEL_FACE_Z + LED_RADIUS
-
-    );
-
-    vna.add(led);
-
+for (let i = 0; i < 6; i++) {
+  const led = new THREE.Mesh(new THREE.SphereGeometry(LED_RADIUS, 12, 12), ledMat);
+  led.position.set(-1.60 + i * 0.14, 0.93, PANEL_FACE_Z + LED_RADIUS);
+  vna.add(led);
 }
 
-window.addEventListener(
+// =====================================================================
+// RESIZE + RENDER LOOP
+// =====================================================================
 
-"resize",
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
-()=>{
-
-camera.aspect=
-
-window.innerWidth/
-
-window.innerHeight;
-
-camera.updateProjectionMatrix();
-
-renderer.setSize(
-
-window.innerWidth,
-
-window.innerHeight
-
-);
-
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
 }
-
-);
-
-function animate(){
-
-requestAnimationFrame(
-
-animate
-
-);
-
-controls.update();
-
-renderer.render(
-
-scene,
-
-camera
-
-);
-
-}
-
 animate();
-
 </script>
-
 </body>
 </html>
